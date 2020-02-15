@@ -5,7 +5,7 @@ import sys
 import mechanize
 import os
 import getpass
-import ConfigParser
+import configparser
 
 # Program for downloading and parsing log data from the Loseit.com web site.
 
@@ -34,7 +34,7 @@ def main():
         if not os.path.exists(sys.argv[1]):
             print("cannot find file: %s" % sys.argv[1])
             sys.exit(1)
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(sys.argv[1])
         try:
             user = config.get('Losebot', 'username')
@@ -77,6 +77,7 @@ startdate=2018-05-01
         start_date_timestamp = last_downloaded_timestamp
 
     download_weekly_food_log_files(br, start_date_timestamp)
+    merge_downloaded_files()
 
 
 def convert_datetime_to_timestamp(year_month_day_string):
@@ -86,7 +87,7 @@ def convert_datetime_to_timestamp(year_month_day_string):
 
 
 def prompt_login():
-    user = raw_input("Username: ")
+    user = input("Username: ")
     password = getpass.getpass("Password: ")
     return password, user
 
@@ -134,7 +135,7 @@ def is_logged_in(br):
     # a redirect to a page with a login means that you have NOT successfully logged in.
     # a page with a login has "Sign In" in text.
     page_contents = br.response().read()
-    return "Sign In" not in page_contents
+    return "Sign In" not in str(page_contents)
 
 
 def get_starting_week_timestamp():
@@ -169,7 +170,7 @@ def get_start_date(br):
 def prompt_start_date():
     one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
     pretty_one_year_ago = pretty_date(float(one_year_ago.strftime("%s")))
-    start_str = raw_input(
+    start_str = input(
         "Start date, in format YYYY-MM-DD, defaults to %s: " % pretty_one_year_ago) or pretty_one_year_ago
     # if start date is prior to when LoseIt began, use LoseIt creation date Jan 2008
     print("start date is: %s" % start_str)
@@ -182,6 +183,22 @@ def prompt_start_date():
         print("Bad format for start date: '%s'; using default of a year ago" % start_str)
         start_date = one_year_ago
     return float(start_date.strftime("%s"))
+
+
+def merge_downloaded_files():
+    csv_files = os.listdir(DOWNLOAD_DIR)
+    file_name = 'merged.csv'
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name), 'w') as out_file:
+        is_first_file = True
+        for csv_file in csv_files:
+            if csv_file.endswith('_food.csv'):
+                with open(os.path.join(DOWNLOAD_DIR, csv_file), 'r') as in_file:
+                    lines = in_file.read().split('\n')
+                    first_line = 0 if is_first_file else 1
+                    is_first_file = False
+                    for line in lines[first_line:]:
+                        if len(line) > 0:
+                            out_file.write(f'{line}\n')
 
 
 main()
