@@ -108,7 +108,7 @@ def pretty_date(secs_since_epoch):
 
 def content_is_ok(filename):
     with open(filename) as f:
-        return "Date,Name,Type,Quantity,Units,Calories,Fat" in f.readline()
+        return "Date,Name,Icon,Type,Quantity,Units,Calories,Deleted,Fat" in f.readline()
 
 
 def download_weekly_food_log_files(br, start_date_timestamp):
